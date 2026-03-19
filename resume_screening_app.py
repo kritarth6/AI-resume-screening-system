@@ -1,6 +1,7 @@
 import streamlit as st
 import joblib
 import pandas as pd
+import re
 
 # Page config
 st.set_page_config(
@@ -9,115 +10,124 @@ st.set_page_config(
     layout="centered"
 )
 
-# 🔥 PREMIUM CLEAN CSS
+# ---------- CSS ----------
 st.markdown("""
 <style>
-
-/* Background (soft premium gradient) */
 .stApp {
-    background: linear-gradient(135deg, #f5f7fa, #e4ecf7);
+    background-color: #f4f6f8;
 }
 
-/* Main card */
 .block-container {
     background: white;
     padding: 2rem;
-    border-radius: 20px;
-    box-shadow: 0px 10px 30px rgba(0,0,0,0.08);
+    border-radius: 18px;
+    box-shadow: 0px 8px 25px rgba(0,0,0,0.08);
 }
 
-/* Title */
 h1 {
     text-align: center;
-    color: #1a1a1a;
-    font-size: 38px;
-    font-weight: 700;
+    color: #111;
+    font-size: 34px;
+    font-weight: bold;
 }
 
-/* Subtitle */
-p {
-    text-align: center;
-    color: #555;
-    font-size: 16px;
-}
-
-/* Text area */
-textarea {
-    background-color: #f9f9f9 !important;
-    color: #000 !important;
-    border-radius: 12px !important;
-    border: 1px solid #ddd !important;
-}
-
-/* Section headers */
 h2, h3 {
     color: #222;
 }
 
-/* Prediction box */
+textarea {
+    background-color: #ffffff !important;
+    color: black !important;
+    border-radius: 10px;
+}
+
 .stSuccess {
     background-color: #e6f4ea !important;
     color: #1e7e34 !important;
     border-radius: 10px;
-    font-weight: 600;
 }
 
-/* Progress bars */
 div[data-testid="stProgressBar"] > div > div {
-    background: linear-gradient(90deg, #4facfe, #00f2fe);
+    background-color: #4caf50;
 }
-
-/* Remove sidebar */
-[data-testid="stSidebar"] {
-    display: none;
-}
-
-/* Footer */
-.footer {
-    text-align: center;
-    color: #777;
-    font-size: 14px;
-    margin-top: 20px;
-}
-
 </style>
 """, unsafe_allow_html=True)
 
-# Load model
+# ---------- Load model ----------
 model = joblib.load("resume_model.pkl")
 tfidf = joblib.load("tfidf.pkl")
 
-# Title
+# ---------- Title ----------
 st.title("📄 AI Resume Screening System")
-st.write("Analyze resumes using Machine Learning & NLP")
+st.caption("HR-level Resume Analysis using Machine Learning")
 
 st.divider()
 
-# Input
-st.subheader("📥 Paste Resume")
-
+# ---------- Input ----------
 resume_text = st.text_area(
-    "",
+    "📥 Paste Resume Content",
     height=220,
-    placeholder="Paste resume content here..."
+    placeholder="Paste resume here..."
 )
 
 st.divider()
 
-# Prediction
+# ---------- Skill Database ----------
+skills_db = [
+    "python", "machine learning", "deep learning", "tensorflow",
+    "keras", "pandas", "numpy", "sql", "power bi",
+    "data analysis", "nlp", "computer vision",
+    "excel", "tableau", "java", "c++", "react"
+]
+
+required_skills = [
+    "python", "machine learning", "sql", "data analysis"
+]
+
+# ---------- Prediction ----------
 if resume_text:
 
+    # ML Prediction
     vector = tfidf.transform([resume_text])
     prediction = model.predict(vector)[0]
     probabilities = model.predict_proba(vector)[0]
 
-    st.subheader("🎯 Result")
+    st.subheader("🎯 Predicted Role")
+    st.success(prediction)
 
-    st.success(f"{prediction}")
+    # ---------- Skill Extraction ----------
+    resume_lower = resume_text.lower()
+
+    found_skills = [skill for skill in skills_db if skill in resume_lower]
+    missing_skills = [skill for skill in required_skills if skill not in resume_lower]
+
+    # ---------- ATS Score ----------
+    score = int((len(found_skills) / len(skills_db)) * 100)
+
+    st.subheader("📊 ATS Resume Score")
+    st.progress(score / 100)
+    st.write(f"**Score: {score}/100**")
+
+    # ---------- Skills Found ----------
+    st.subheader("✅ Detected Skills")
+
+    if found_skills:
+        st.write(", ".join(found_skills))
+    else:
+        st.warning("No major skills detected")
+
+    # ---------- Missing Skills ----------
+    st.subheader("❌ Missing Important Skills")
+
+    if missing_skills:
+        st.write(", ".join(missing_skills))
+    else:
+        st.success("Great! No critical skills missing")
 
     st.divider()
 
-    st.subheader("📊 Confidence")
+    # ---------- Confidence ----------
+    st.subheader("📈 Model Confidence")
 
     categories = model.classes_
 
@@ -127,11 +137,12 @@ if resume_text:
     }).sort_values(by="Probability", ascending=False)
 
     for _, row in prob_df.head(5).iterrows():
-        st.write(f"{row['Category']}")
+        st.write(row["Category"])
         st.progress(float(row["Probability"]))
 
-# Footer
+# ---------- Footer ----------
+st.markdown("---")
 st.markdown(
-    "<div class='footer'>Built with ❤️ by Kritarth Joshi</div>",
+    "<center>✨ Built by Kritarth Joshi | AI Resume Analyzer</center>",
     unsafe_allow_html=True
 )
