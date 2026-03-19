@@ -9,59 +9,62 @@ st.set_page_config(
     layout="wide"
 )
 
-# 🔥 ADVANCED CSS (Gradient + Glass UI)
+# 🔥 FORCE FULL BACKGROUND (IMPORTANT FIX)
 st.markdown("""
 <style>
 
-body {
-    background: linear-gradient(135deg, #1f4037, #99f2c8);
-    color: white;
+/* FULL PAGE BACKGROUND */
+.stApp {
+    background: linear-gradient(135deg, #667eea, #764ba2);
 }
 
-/* Glass effect */
+/* Remove default black container */
 .block-container {
-    background: rgba(0,0,0,0.6);
+    background: rgba(255, 255, 255, 0.08);
     padding: 2rem;
     border-radius: 20px;
 }
 
-/* Title styling */
+/* Title */
 h1 {
     text-align: center;
-    font-size: 40px;
-    color: #00ffd5;
+    color: white;
+    font-size: 42px;
 }
 
-/* Textarea */
+/* Subtitle */
+p {
+    text-align: center;
+    color: #e0e0e0;
+}
+
+/* Text area */
 textarea {
-    background-color: #111 !important;
-    color: #00ffd5 !important;
+    background-color: #ffffff !important;
+    color: black !important;
     border-radius: 10px;
 }
 
-/* Sidebar */
-[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #141e30, #243b55);
-}
-
-/* Buttons */
-.stButton>button {
-    background: linear-gradient(90deg, #00ffd5, #00c3ff);
-    color: black;
+/* Prediction box */
+.stSuccess {
+    background-color: #00c9a7 !important;
+    color: black !important;
     font-weight: bold;
-    border-radius: 10px;
-    padding: 10px;
 }
 
-/* Progress bar color */
+/* Progress bar */
 div[data-testid="stProgressBar"] > div > div {
-    background-color: #00ffd5;
+    background-color: #ff4b2b;
 }
 
-/* Hover effect */
-.stButton>button:hover {
-    transform: scale(1.05);
-    transition: 0.3s;
+/* Section titles */
+h2, h3 {
+    color: white;
+}
+
+/* Remove sidebar (optional clean look) */
+[data-testid="stSidebar"] {
+    display: none;
 }
 
 </style>
@@ -71,44 +74,20 @@ div[data-testid="stProgressBar"] > div > div {
 model = joblib.load("resume_model.pkl")
 tfidf = joblib.load("tfidf.pkl")
 
-# Sidebar
-st.sidebar.title("🚀 AI Resume Analyzer")
-st.sidebar.markdown("""
-**👨‍💻 Built by Kritarth Joshi**
-
-✨ NLP + TF-IDF  
-✨ Naive Bayes Model  
-✨ Real-time Prediction  
-""")
-
 # Title
 st.title("🚀 AI Resume Screening System")
-st.caption("Smart Resume Classification using AI")
+st.write("Smart Resume Classification using AI")
 
 st.divider()
 
-# Layout
-col1, col2 = st.columns([2,1])
-
 # Input
-with col1:
-    st.subheader("📄 Enter Resume")
-    resume_text = st.text_area(
-        "Paste Resume Content",
-        height=250,
-        placeholder="Paste resume text here..."
-    )
+st.subheader("📄 Enter Resume")
 
-# Info
-with col2:
-    st.subheader("📊 Model Info")
-    st.success("Accuracy: ~88%")
-
-    st.markdown("""
-    **Model:** Naive Bayes  
-    **Technique:** TF-IDF  
-    **Dataset:** 962 resumes  
-    """)
+resume_text = st.text_area(
+    "Paste Resume Content",
+    height=250,
+    placeholder="Paste resume text here..."
+)
 
 st.divider()
 
@@ -119,13 +98,13 @@ if resume_text:
     prediction = model.predict(vector)[0]
     probabilities = model.predict_proba(vector)[0]
 
-    st.subheader("🎯 Prediction")
+    st.subheader("🎯 Prediction Result")
 
-    st.success(f"💼 {prediction}")
+    st.success(f"{prediction}")
 
     st.divider()
 
-    st.subheader("📊 Confidence")
+    st.subheader("📊 Confidence Scores")
 
     categories = model.classes_
 
@@ -134,18 +113,13 @@ if resume_text:
         "Probability": probabilities
     }).sort_values(by="Probability", ascending=False)
 
-    # Progress bars
     for index, row in prob_df.head(5).iterrows():
         st.write(f"**{row['Category']}**")
         st.progress(float(row["Probability"]))
 
-    # Expand details
-    with st.expander("📄 Detailed Scores"):
-        st.dataframe(prob_df)
-
 # Footer
 st.markdown("---")
 st.markdown(
-    "<center>✨ Built with ❤️ by <b>Kritarth Joshi</b></center>",
+    "<center style='color:white;'>✨ Built by Kritarth Joshi</center>",
     unsafe_allow_html=True
 )
