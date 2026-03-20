@@ -1,177 +1,132 @@
 import streamlit as st
 import joblib
 import pandas as pd
-import re
+import plotly.express as px
 
-# ---------- CONFIG ----------
-st.set_page_config(page_title="AI Resume Analyzer", page_icon="🚀", layout="centered")
+# Page Config
+st.set_page_config(page_title="AI Resume Analyzer", layout="wide")
 
-# ---------- DARK PREMIUM CSS ----------
+# -------- PREMIUM UI CSS --------
 st.markdown("""
 <style>
+
+/* Background Gradient */
 .stApp {
-    background: linear-gradient(135deg, #1e293b, #0f172a);
+    background: linear-gradient(135deg, #1e3c72, #2a5298, #4facfe);
+    color: white;
 }
 
-/* Card */
-.block-container {
-    background: #111827;
-    padding: 2rem;
-    border-radius: 18px;
-    box-shadow: 0px 10px 30px rgba(0,0,0,0.6);
-}
-
-/* Title */
-h1 {
+/* Main Title */
+.title {
     text-align: center;
-    color: #f8fafc !important;
+    font-size: 50px;
+    font-weight: bold;
+    color: white;
 }
 
-/* Text */
-p {
-    color: #cbd5e1 !important;
+/* Subtitle */
+.subtitle {
     text-align: center;
+    font-size: 18px;
+    color: #dbeafe;
+    margin-bottom: 30px;
 }
 
-/* Input */
+/* Glass Card */
+.card {
+    background: rgba(255, 255, 255, 0.08);
+    padding: 25px;
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+
+/* Text Area */
 textarea {
-    background-color: #020617 !important;
-    color: #f1f5f9 !important;
-    border: 1px solid #334155 !important;
-    border-radius: 12px !important;
+    background-color: rgba(255,255,255,0.1) !important;
+    color: white !important;
+    border-radius: 10px !important;
 }
 
-/* Result box */
-.stSuccess {
-    background-color: #022c22 !important;
-    color: #4ade80 !important;
+/* Button */
+.stButton>button {
+    background: linear-gradient(90deg, #00c6ff, #0072ff);
+    color: white;
+    border-radius: 10px;
+    font-size: 18px;
+    font-weight: bold;
+    border: none;
+    padding: 10px 20px;
 }
 
-/* Progress */
-div[data-testid="stProgressBar"] > div > div {
-    background: linear-gradient(90deg, #38bdf8, #22c55e);
+/* Footer */
+.footer {
+    text-align: center;
+    margin-top: 40px;
+    color: #e2e8f0;
+    font-size: 14px;
 }
 
-/* Skill tags */
-.tag {
-    display: inline-block;
-    background: #1e293b;
-    color: #38bdf8;
-    padding: 6px 10px;
-    margin: 5px;
-    border-radius: 8px;
-    font-size: 13px;
-}
-
-/* Missing skills */
-.missing {
-    background: #3f1d1d;
-    color: #f87171;
-}
-
-/* Remove sidebar */
-[data-testid="stSidebar"] {
-    display: none;
-}
 </style>
 """, unsafe_allow_html=True)
 
-# ---------- LOAD ----------
+# -------- LOAD MODEL --------
 model = joblib.load("resume_model.pkl")
 tfidf = joblib.load("tfidf.pkl")
 
-# ---------- TITLE ----------
-st.title("🚀 AI Resume Analyzer")
-st.caption("Smart Resume Screening with AI (HR-Level Tool)")
+# -------- HEADER --------
+st.markdown('<div class="title">🚀 AI Resume Analyzer</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">Smart Resume Classification using AI & NLP</div>', unsafe_allow_html=True)
 
-st.divider()
+# -------- INPUT CARD --------
+st.markdown('<div class="card">', unsafe_allow_html=True)
 
-# ---------- INPUT ----------
-resume_text = st.text_area("📥 Paste Resume", height=220)
+resume_text = st.text_area("📄 Paste Resume Content", height=250)
 
-# ---------- SKILL DB ----------
-skills_db = [
-    "python","machine learning","deep learning","tensorflow","keras",
-    "pandas","numpy","sql","power bi","nlp","computer vision",
-    "excel","tableau","java","c++","react"
-]
+predict_btn = st.button("🔍 Analyze Resume")
 
-required_skills = ["python","machine learning","sql","data analysis"]
+st.markdown('</div>', unsafe_allow_html=True)
 
-# ---------- FUNCTION: HIGHLIGHT ----------
-def highlight_skills(text, skills):
-    for skill in skills:
-        text = re.sub(f"({skill})", r"<mark>\1</mark>", text, flags=re.IGNORECASE)
-    return text
+# -------- PREDICTION --------
+if predict_btn:
 
-# ---------- MAIN ----------
-if resume_text:
-
-    # ML Prediction
-    vector = tfidf.transform([resume_text])
-    prediction = model.predict(vector)[0]
-    probabilities = model.predict_proba(vector)[0]
-
-    st.subheader("🎯 Predicted Role")
-    st.success(prediction)
-
-    # ---------- SKILL DETECTION ----------
-    resume_lower = resume_text.lower()
-
-    found_skills = [s for s in skills_db if s in resume_lower]
-    missing_skills = [s for s in required_skills if s not in resume_lower]
-
-    # ---------- ATS SCORE ----------
-    score = int((len(found_skills) / len(skills_db)) * 100)
-
-    st.subheader("📊 ATS Score")
-    st.progress(score / 100)
-    st.write(f"### {score}/100")
-
-    # ---------- SKILLS ----------
-    st.subheader("✅ Detected Skills")
-
-    if found_skills:
-        for skill in found_skills:
-            st.markdown(f"<span class='tag'>{skill}</span>", unsafe_allow_html=True)
+    if resume_text.strip() == "":
+        st.warning("⚠️ Please enter resume text")
     else:
-        st.warning("No major skills detected")
+        vector = tfidf.transform([resume_text])
+        prediction = model.predict(vector)[0]
+        probabilities = model.predict_proba(vector)[0]
 
-    # ---------- MISSING ----------
-    st.subheader("❌ Missing Skills")
+        st.markdown('<div class="card">', unsafe_allow_html=True)
 
-    if missing_skills:
-        for skill in missing_skills:
-            st.markdown(f"<span class='tag missing'>{skill}</span>", unsafe_allow_html=True)
-    else:
-        st.success("No critical skills missing")
+        st.success(f"🎯 Predicted Category: {prediction}")
 
-    st.divider()
+        # Probability Chart
+        categories = model.classes_
 
-    # ---------- HIGHLIGHT ----------
-    st.subheader("🔍 Resume Analysis (Highlighted Skills)")
-    highlighted = highlight_skills(resume_text, found_skills)
-    st.markdown(highlighted, unsafe_allow_html=True)
+        prob_df = pd.DataFrame({
+            "Category": categories,
+            "Probability": probabilities
+        }).sort_values(by="Probability", ascending=False)
 
-    st.divider()
+        fig = px.bar(
+            prob_df.head(8),
+            x="Probability",
+            y="Category",
+            orientation='h',
+            title="Confidence Scores",
+            text_auto=True
+        )
 
-    # ---------- CONFIDENCE ----------
-    st.subheader("📈 Model Confidence")
+        fig.update_layout(
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color="white")
+        )
 
-    categories = model.classes_
+        st.plotly_chart(fig, use_container_width=True)
 
-    prob_df = pd.DataFrame({
-        "Category": categories,
-        "Probability": probabilities
-    }).sort_values(by="Probability", ascending=False)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    for _, row in prob_df.head(5).iterrows():
-        st.write(row["Category"])
-        st.progress(float(row["Probability"]))
-
-# ---------- FOOTER ----------
-st.markdown("---")
-st.markdown(
-    "<center style='color:#94a3b8;'>✨ Built by Kritarth Joshi | AI Resume Analyzer</center>",
-    unsafe_allow_html=True
-)
+# -------- FOOTER --------
+st.markdown('<div class="footer">✨ Built by Kritarth Joshi | AI Resume Analyzer</div>', unsafe_allow_html=True)
