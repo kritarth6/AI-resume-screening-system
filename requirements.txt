@@ -4,3 +4,4 @@ scikit-learn
 joblib
 matplotlib
 plotly
+PyPDF2
