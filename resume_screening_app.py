@@ -11,14 +11,11 @@ st.set_page_config(page_title="AI Resume Analyzer", layout="wide")
 # -------- CSS --------
 st.markdown("""
 <style>
-
-/* Background */
 .stApp {
     background: linear-gradient(135deg, #0f172a, #1e293b, #020617);
     color: #e2e8f0;
 }
 
-/* Title */
 .title {
     text-align: center;
     font-size: 52px;
@@ -28,14 +25,12 @@ st.markdown("""
     -webkit-text-fill-color: transparent;
 }
 
-/* Subtitle */
 .subtitle {
     text-align: center;
     color: #94a3b8;
     margin-bottom: 30px;
 }
 
-/* Card */
 .card {
     background: rgba(255,255,255,0.05);
     padding: 25px;
@@ -46,7 +41,6 @@ st.markdown("""
     margin-bottom: 20px;
 }
 
-/* Button */
 .stButton>button {
     background: linear-gradient(90deg, #6366f1, #ec4899);
     color: white;
@@ -55,13 +49,11 @@ st.markdown("""
     padding: 10px 20px;
 }
 
-/* Footer */
 .footer {
     text-align: center;
     margin-top: 40px;
     color: #64748b;
 }
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -74,23 +66,62 @@ st.markdown('<div class="title">🚀 AI Resume Analyzer</div>', unsafe_allow_htm
 st.markdown('<div class="subtitle">Upload or Paste Resume • Get AI Insights</div>', unsafe_allow_html=True)
 
 # -------- FUNCTIONS --------
+
 def extract_text_from_pdf(file):
     reader = PdfReader(file)
     text = ""
     for page in reader.pages:
-        text += page.extract_text()
+        if page.extract_text():
+            text += page.extract_text()
     return text
 
-def extract_skills(text):
-    skills_list = ["python", "java", "c++", "machine learning", "deep learning",
-                   "sql", "excel", "power bi", "tableau", "nlp", "data analysis"]
-    found = [skill for skill in skills_list if skill.lower() in text.lower()]
-    return found
 
+def extract_skills(text):
+    skills_list = [
+        "python", "java", "c++", "machine learning", "deep learning",
+        "sql", "excel", "power bi", "tableau", "nlp", "data analysis"
+    ]
+    return [skill for skill in skills_list if skill in text.lower()]
+
+
+# ✅ FIXED ATS SCORE (Weighted)
 def ats_score(text):
-    keywords = ["experience", "project", "skills", "education"]
-    score = sum([1 for k in keywords if k in text.lower()])
-    return int((score / len(keywords)) * 100)
+    text = text.lower()
+
+    weights = {
+        "skills": 10,
+        "experience": 15,
+        "project": 15,
+        "education": 10,
+        "internship": 10,
+        "python": 5,
+        "sql": 5,
+        "machine learning": 10,
+        "communication": 5,
+        "teamwork": 5,
+        "leadership": 5,
+        "certification": 5
+    }
+
+    score = 0
+
+    for key, value in weights.items():
+        if key in text:
+            score += value
+
+    return min(score, 100)
+
+
+# ✅ Missing Keywords (NEW 🔥)
+def missing_keywords(text):
+    keywords = [
+        "python", "sql", "machine learning", "project",
+        "internship", "communication", "teamwork", "leadership"
+    ]
+
+    text = text.lower()
+    return [k for k in keywords if k not in text]
+
 
 # -------- INPUT SECTION --------
 st.markdown('<div class="card">', unsafe_allow_html=True)
@@ -131,37 +162,18 @@ if analyze_btn:
         st.success(f"🎯 Predicted Role: {prediction}")
 
         # -------- ATS SCORE --------
-        def ats_score(text):
-    text = text.lower()
-
-    weights = {
-        "skills": 10,
-        "experience": 15,
-        "project": 15,
-        "education": 10,
-        "internship": 10,
-        "python": 5,
-        "sql": 5,
-        "machine learning": 10,
-        "communication": 5,
-        "teamwork": 5,
-        "leadership": 5,
-        "certification": 5
-    }
-
-    score = 0
-
-    for key, value in weights.items():
-        if key in text:
-            score += value
-
-    return min(score, 100)
+        score = ats_score(resume_text)
+        st.metric("📊 ATS Score", f"{score}%")
 
         # -------- SKILLS --------
         skills = extract_skills(resume_text)
         st.write("💡 **Detected Skills:**", skills if skills else "No major skills found")
 
-        # -------- PROBABILITY CHART --------
+        # -------- MISSING KEYWORDS --------
+        missing = missing_keywords(resume_text)
+        st.write("❌ **Missing Keywords (Improve Resume):**", missing if missing else "None 🎉")
+
+        # -------- CHART --------
         categories = model.classes_
         prob_df = pd.DataFrame({
             "Category": categories,
@@ -193,7 +205,10 @@ AI Resume Analysis Report
 
 Predicted Role: {prediction}
 ATS Score: {score}%
+
 Skills: {', '.join(skills)}
+
+Missing Keywords: {', '.join(missing)}
         """
 
         st.download_button("📥 Download Report", report, file_name="resume_report.txt")
