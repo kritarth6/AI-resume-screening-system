@@ -131,8 +131,31 @@ if analyze_btn:
         st.success(f"🎯 Predicted Role: {prediction}")
 
         # -------- ATS SCORE --------
-        score = ats_score(resume_text)
-        st.metric("📊 ATS Score", f"{score}%")
+        def ats_score(text):
+    text = text.lower()
+
+    weights = {
+        "skills": 10,
+        "experience": 15,
+        "project": 15,
+        "education": 10,
+        "internship": 10,
+        "python": 5,
+        "sql": 5,
+        "machine learning": 10,
+        "communication": 5,
+        "teamwork": 5,
+        "leadership": 5,
+        "certification": 5
+    }
+
+    score = 0
+
+    for key, value in weights.items():
+        if key in text:
+            score += value
+
+    return min(score, 100)
 
         # -------- SKILLS --------
         skills = extract_skills(resume_text)
